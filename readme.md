@@ -29,4 +29,7 @@ More info on the [discordpy install guide](https://discordpy.readthedocs.io/en/l
 
 [Link to discordpy's guide.](https://discordpy.readthedocs.io/en/latest/discord.html "Discordpy docs - invite, create.")
 
+## Token
 
+Each bot has a token which acts as its "key".
+Replace the file `token.txt` to contain only your bot token (without the quotation marks).
