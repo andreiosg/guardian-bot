@@ -1,4 +1,4 @@
-# Guardian Discord bot
+# Discord bot 'Guardian'
 
 Bot functionalities include:
 - Music playback
@@ -14,14 +14,18 @@ In this simplified case it would be an image commonly consisting of text + some 
 [Official discord.py documentation.](https://discordpy.readthedocs.io/en/latest/index.html "Discordpy docs.")
 
 
-Install the module:
+Install the modules:
 
-`$ python3 -m pip install -U discord.py[voice]`
+`$ python3 -m pip install -U discord.py[voice] youtube_dl`
 
 
-Install the following dependencies (Debian based systems):
+Install the following dependencies for discord.py[voice] (Debian based systems):
 
 `$ sudo apt install libffi-dev libnacl-dev python3-dev`
+
+Install the following dependency for the YTDLSource class:
+
+`$ sudo apt install ffmpeg`
 
 More info on the [discordpy install guide](https://discordpy.readthedocs.io/en/latest/intro.html "Module install guide.").
 
