@@ -4,7 +4,6 @@ import youtube_dl
 
 from discord.ext import commands
 
-
 bot = commands.Bot(command_prefix='!')
 
 youtube_dl.utils.bug_reports_message = lambda: ''
@@ -72,8 +71,9 @@ async def play(ctx, url):
 async def join(ctx):
     channel = ctx.author.voice.channel
 
-    if ctx.voice_client is not None:
-        return await ctx.voice_client.move_to(channel)
+    vc = ctx.voice_client
+    if vc is not None:
+        return await vc.move_to(channel)
 
     await channel.connect()
     
