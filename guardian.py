@@ -55,14 +55,13 @@ class MusicPlayer(commands.Cog):
         self.songs = asyncio.Queue()
         self.play_next = asyncio.Event()
 
-        self.bot.loop.create_task(self.mp_task())
+        self.bot.loop.create_task(self.queue_task())
 
-    async def mp_task(self):
+    async def queue_task(self):
         while True:
             self.play_next.clear()
 
-            self.current = await self.songs.get()
-            ctx, player = self.current
+            ctx, player = await self.songs.get()
             ctx.voice_client.play(player, after = lambda _: self.toggle_next())
             await ctx.send(f'Playing: {player.title}')
 
