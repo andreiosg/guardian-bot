@@ -64,7 +64,7 @@ class MusicPlayer(commands.Cog):
             self.current = await self.songs.get()
             ctx, player = self.current
             ctx.voice_client.play(player, after = lambda _: self.toggle_next())
-            await ctx.send(f'Now playing: {player.title}')
+            await ctx.send(f'Playing: {player.title}')
 
             await self.play_next.wait()
             
@@ -85,13 +85,13 @@ class MusicPlayer(commands.Cog):
 
     @commands.command()
     async def join(self, ctx):
-        channel = ctx.author.voice.channel
+        if ctx.author.voice is None: return
 
         vc = ctx.voice_client
         if vc is not None:
-            return await vc.move_to(channel)
+            return await vc.move_to(ctx.author.voice.channel)
 
-        await channel.connect()
+        await ctx.author.voice.channel.connect()
         
     @commands.command()
     async def leave(self, ctx):
@@ -140,4 +140,5 @@ with open('token.txt') as f:
 bot.add_cog(MusicPlayer(bot))
 bot.add_cog(BotEmojiHandler(bot))
 bot.run(token)
+
 
