@@ -4,7 +4,7 @@ import youtube_dl
 
 from discord.ext import commands
 
-bot = commands.Bot(command_prefix='!')
+msg_id = None
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -49,54 +49,68 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
 
+
+class MusicPlayer(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        
+    @commands.command()
+    async def play(self, ctx, url):
+        vc = ctx.voice_client
+        if vc is None:
+            return
+
+        if vc.is_playing():
+            return await ctx.send('Already playing audio.')
+
+        player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+        vc.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+        await ctx.send('Now playing: {}'.format(player.title))
+
+    @commands.command()
+    async def join(self, ctx):
+        channel = ctx.author.voice.channel
+
+        vc = ctx.voice_client
+        if vc is not None:
+            return await vc.move_to(channel)
+
+        await channel.connect()
+        
+    @commands.command()
+    async def leave(self, ctx):
+        vc = ctx.voice_client
+        if vc is not None:
+            await vc.disconnect()
+
+    @commands.command()
+    async def pause(self, ctx):
+        vc = ctx.voice_client
+        if vc is not None and vc.is_playing():
+            vc.pause()
+
+    @commands.command()
+    async def resume(self, ctx):
+        vc = ctx.voice_client
+        if vc is not None and vc.is_paused():
+            vc.resume()
+            
+'''
+@bot.command()
+async def eggeater(ctx, msgID):
+    msg = await ctx.fetch_message(msgID)
+    await msg.add_reaction('<a:eggeater:780741073491722240>')
+'''
+
+bot = commands.Bot(command_prefix='!')
+
 @bot.event
 async def on_ready():
     print(f'Logged in as {bot.user}')
-
-
-@bot.command()
-async def play(ctx, url):
-    vc = ctx.voice_client
-    if vc is None:
-        return
-
-    if vc.is_playing():
-        return await ctx.send('Already playing audio.')
-
-    player = await YTDLSource.from_url(url, loop=bot.loop, stream=True)
-    vc.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-    await ctx.send('Now playing: {}'.format(player.title))
-
-@bot.command()
-async def join(ctx):
-    channel = ctx.author.voice.channel
-
-    vc = ctx.voice_client
-    if vc is not None:
-        return await vc.move_to(channel)
-
-    await channel.connect()
-    
-@bot.command()
-async def leave(ctx):
-    vc = ctx.voice_client
-    if vc is not None:
-        await vc.disconnect()
-
-@bot.command()
-async def pause(ctx):
-    vc = ctx.voice_client
-    if vc is not None and vc.is_playing():
-        vc.pause()
-
-@bot.command()
-async def resume(ctx):
-    vc = ctx.voice_client
-    if vc is not None and vc.is_paused():
-        vc.resume()
-
+    print(r'------')
 
 with open('token.txt') as f:
     token = f.read()
 
+bot.add_cog(MusicPlayer(bot))
 bot.run(token)
