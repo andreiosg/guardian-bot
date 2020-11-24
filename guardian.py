@@ -53,19 +53,38 @@ class YTDLSource(discord.PCMVolumeTransformer):
 class MusicPlayer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        
+
+        self.songs = asyncio.Queue()
+        self.play_next = asyncio.Event()
+
+        self.bot.loop.create_task(self.mp_task())
+
+    async def mp_task(self):
+        while True:
+            self.play_next.clear()
+
+            self.current = await self.songs.get()
+            ctx, player = self.current
+            ctx.voice_client.play(player, after = lambda _: self.toggle_next())
+            await ctx.send(f'Now playing: {player.title}')
+
+            await self.play_next.wait()
+            
+    
+    def toggle_next(self):
+        self.bot.loop.call_soon_threadsafe(self.play_next.set)
+
     @commands.command()
     async def play(self, ctx, url):
         vc = ctx.voice_client
+
         if vc is None:
             return
 
-        if vc.is_playing():
-            return await ctx.send('Already playing audio.')
-
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-        vc.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-        await ctx.send('Now playing: {}'.format(player.title))
+        if vc.is_playing():
+            await ctx.send(f'Queued: {player.title}')
+        await self.songs.put((ctx, player))
 
     @commands.command()
     async def join(self, ctx):
@@ -84,6 +103,12 @@ class MusicPlayer(commands.Cog):
             await vc.disconnect()
 
     @commands.command()
+    async def stop(self, ctx):
+        vc = ctx.voice_client
+        if vc is not None and vc.is_playing():
+            vc.stop()
+
+    @commands.command()
     async def pause(self, ctx):
         vc = ctx.voice_client
         if vc is not None and vc.is_playing():
@@ -94,6 +119,16 @@ class MusicPlayer(commands.Cog):
         vc = ctx.voice_client
         if vc is not None and vc.is_paused():
             vc.resume()
+
+
+class BotEmojiHandler(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @commands.command()
+    async def emoji(self, ctx):
+        await ctx.send('ide')
+
             
 '''
 @bot.command()
@@ -113,4 +148,5 @@ with open('token.txt') as f:
     token = f.read()
 
 bot.add_cog(MusicPlayer(bot))
+bot.add_cog(BotEmojiHandler(bot))
 bot.run(token)
