@@ -103,7 +103,7 @@ class MusicPlayer(commands.Cog):
             await vc.disconnect()
 
     @commands.command()
-    async def stop(self, ctx):
+    async def skip(self, ctx):
         vc = ctx.voice_client
         if vc is not None and vc.is_playing():
             vc.stop()
