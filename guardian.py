@@ -4,8 +4,6 @@ import youtube_dl
 
 from discord.ext import commands
 
-msg_id = None
-
 youtube_dl.utils.bug_reports_message = lambda: ''
 
 ytdl_format_options = {
@@ -70,7 +68,6 @@ class MusicPlayer(commands.Cog):
 
             await self.play_next.wait()
             
-    
     def toggle_next(self):
         self.bot.loop.call_soon_threadsafe(self.play_next.set)
 
@@ -126,16 +123,9 @@ class BotEmojiHandler(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def emoji(self, ctx):
-        await ctx.send('ide')
-
-            
-'''
-@bot.command()
-async def eggeater(ctx, msgID):
-    msg = await ctx.fetch_message(msgID)
-    await msg.add_reaction('<a:eggeater:780741073491722240>')
-'''
+    async def react(self, ctx, msg_id):
+        msg = await ctx.fetch_message(msg_id)
+        await msg.add_reaction('<a:eggeater:780741073491722240>')
 
 bot = commands.Bot(command_prefix='!')
 
@@ -150,3 +140,4 @@ with open('token.txt') as f:
 bot.add_cog(MusicPlayer(bot))
 bot.add_cog(BotEmojiHandler(bot))
 bot.run(token)
+
