@@ -20,9 +20,15 @@ ytdl_format_options = {
     'source_address': '0.0.0.0' # ipv4, ipv6 can have issues
 }
 
+# Based on the streaming option
+# True ffmpeg options meant to fix streaming read error invalidation
+# False is for a downloaded audio file
 ffmpeg_options = {
-    'options': '-vn'
-}
+    True: {
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'},
+    False: {
+        'options': '-vn'}
+    }
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
@@ -45,7 +51,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+        return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options[stream]), data=data)
 
 
 class MusicPlayer(commands.Cog):
@@ -71,13 +77,25 @@ class MusicPlayer(commands.Cog):
         self.bot.loop.call_soon_threadsafe(self.play_next.set)
 
     @commands.command()
-    async def play(self, ctx, *, url):
+    async def stream(self, ctx, *, url):
         vc = ctx.voice_client
 
         if vc is None:
             return
 
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+        if vc.is_playing():
+            await ctx.send(f'Queued: {player.title}')
+        await self.songs.put((ctx, player))
+
+    @commands.command()
+    async def ytd(self, ctx, *, url):
+        vc = ctx.voice_client
+
+        if vc is None:
+            return
+
+        player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=False)
         if vc.is_playing():
             await ctx.send(f'Queued: {player.title}')
         await self.songs.put((ctx, player))
