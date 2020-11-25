@@ -6,11 +6,9 @@ from discord.ext import commands
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
-# 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s'
-# changed to 'outtmpl': 'ytd.%(ext)s', to avoid file pollution
 ytdl_format_options = {
     'format': 'bestaudio/best',
-    'outtmpl': 'media/ytd.%(ext)s',
+    'outtmpl': 'media/%(extractor)s-%(id)s-%(title)s.%(ext)s',
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
@@ -18,11 +16,12 @@ ytdl_format_options = {
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
+    'nooverwrites': False,
     'default_search': 'auto',
     'source_address': '0.0.0.0' # ipv4, ipv6 can have issues
 }
 
-# Based on the streaming option
+# Based on the streaming option (True, False)
 # True ffmpeg options meant to fix streaming read error invalidation
 # False is for a downloaded audio file
 ffmpeg_options = {
@@ -34,6 +33,7 @@ ffmpeg_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
+# download/streamable audio source
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
@@ -49,7 +49,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
 
         if 'entries' in data:
-            # take first item from a playlist
+            # take first item from a playlist (youtube), not to confuse with queue_task
             data = data['entries'][0]
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
