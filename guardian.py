@@ -6,9 +6,11 @@ from discord.ext import commands
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
+# 'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s'
+# changed to 'outtmpl': 'ytd.%(ext)s', to avoid file pollution
 ytdl_format_options = {
     'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'outtmpl': 'media/ytd.%(ext)s',
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
@@ -70,7 +72,7 @@ class MusicPlayer(commands.Cog):
             ctx, player = await self.songs.get()
             ctx.voice_client.play(player, after = lambda _: self.toggle_next())
             await ctx.send(f'Playing: {player.title}')
-
+            
             await self.play_next.wait()
             
     def toggle_next(self):
