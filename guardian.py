@@ -71,7 +71,7 @@ class MusicPlayer(commands.Cog):
         self.bot.loop.call_soon_threadsafe(self.play_next.set)
 
     @commands.command()
-    async def play(self, ctx, url):
+    async def play(self, ctx, *, url):
         vc = ctx.voice_client
 
         if vc is None:
@@ -84,7 +84,8 @@ class MusicPlayer(commands.Cog):
 
     @commands.command()
     async def join(self, ctx):
-        if ctx.author.voice is None: return
+        if ctx.author.voice is None: 
+            return await ctx.send('User not in a voice channel.')
 
         vc = ctx.voice_client
         if vc is not None:
