@@ -1,6 +1,7 @@
 import asyncio
 import discord
 import youtube_dl
+import re
 
 from discord.ext import commands
 
@@ -146,6 +147,12 @@ class BotEmojiHandler(commands.Cog):
     async def react(self, ctx, msg_id):
         msg = await ctx.fetch_message(msg_id)
         await msg.add_reaction('<a:eggeater:780741073491722240>')
+
+    @commands.command()
+    async def atag(self, ctx, user, *, message):
+        # author name without id
+        author = re.search('^(.*)#[0-9]{4}', str(ctx.message.author)).group(1)
+
 
 bot = commands.Bot(command_prefix='!')
 
