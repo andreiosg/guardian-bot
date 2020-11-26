@@ -152,7 +152,7 @@ class BotEmojiHandler(commands.Cog):
         return f'<a:{emoji_name}:{emojiID}>'
 
     @commands.command()
-    async def react(self, ctx, emoji_name, msg_id):
+    async def areact(self, ctx, emoji_name, msg_id):
         msg = await ctx.fetch_message(msg_id)
         emoji = self.build_emoji(emoji_name)
         await msg.add_reaction(emoji)
