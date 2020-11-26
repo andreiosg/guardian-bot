@@ -2,6 +2,7 @@
 
 Bot functionalities include:
 - Music playback
+- Animated bot emoji handling
 - Image storage and indexing
 
 The problem which inspired image storage and indexing is quick identification and resending of an already sent meme; a short, humoristic expression of ideas and viewpoints of certain individuals/groups. 
@@ -56,3 +57,4 @@ The following animated bot emoji handler commands are at the users disposal:
 - `!react emoji_name message_id` - reacts with an animated emoji to the specified message id
 - `!atag emoji_name user` - sends a message in the form of `author: @user animated_emoji`
 
+## Image storage and indexing
