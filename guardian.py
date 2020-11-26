@@ -2,6 +2,7 @@ import asyncio
 import discord
 import youtube_dl
 import re
+import pandas 
 
 from discord.ext import commands
 
@@ -143,16 +144,24 @@ class BotEmojiHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
-    async def react(self, ctx, msg_id):
-        msg = await ctx.fetch_message(msg_id)
-        await msg.add_reaction('<a:eggeater:780741073491722240>')
+        self.animojis = pandas.read_csv('data/animated-emojis.csv')
+
+    def get_emojiID(self, emoji_name):
+        idx = self.animojis[self.animojis['name']==emoji_name].index.item() 
+        return self.animojis.at[idx, 'emojiID']
 
     @commands.command()
-    async def atag(self, ctx, user, *, message):
+    async def react(self, ctx, emoji_name, msg_id):
+        msg = await ctx.fetch_message(msg_id)
+        emojiID = self.get_emojiID(emoji_name)
+        await msg.add_reaction(f'<a:{emoji_name}:{emojiID}>')
+
+    @commands.command()
+    async def atag(self, ctx, emoji_name, user: discord.Member = None):
         # author name without id
         author = re.search('^(.*)#[0-9]{4}', str(ctx.message.author)).group(1)
-
+        emojiID = self.get_emojiID(emoji_name)
+        await ctx.send(f'{author}: {user.mention} <a:{emoji_name}:{emojiID}>')
 
 bot = commands.Bot(command_prefix='!')
 
