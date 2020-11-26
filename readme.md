@@ -50,3 +50,9 @@ The following music playback commands are at the users disposal:
 - `!pause` - pauses current song
 - `!resume` - resumes current song
 
+## Bot emoji handler
+
+The following animated bot emoji handler commands are at the users disposal:
+- `!react emoji_name message_id` - reacts with an animated emoji to the specified message id
+- `!atag emoji_name user` - sends a message in the form of `author: @user animated_emoji`
+
