@@ -57,6 +57,8 @@ The following music playback commands are at the users disposal:
 
 Music queueing was implemented through the usage of the `asyncio.Queue` and `asyncio.Event` classes.
 
+Event loop blocking is avoided by running the blocking functions in a default loop executor. Example: `awaitable loop.run_in_executor(...)`
+
 ## Bot emoji handler
 
 The following animated bot emoji handler commands are at the users disposal:
