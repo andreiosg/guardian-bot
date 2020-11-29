@@ -103,6 +103,15 @@ class MusicPlayer(commands.Cog):
         if vc.is_playing():
             await ctx.send(f'Queued: {player.title}')
         await self.songs.put((ctx, player))
+        
+    @commands.command()
+    async def volume(self, ctx, volume: int):
+        vc = ctx.voice_client
+        if vc is None:
+            return await ctx.send('Not in a voice channel.')
+
+        vc.source.volume = volume / 100
+        await ctx.send(f'Set volume to {volume}')
 
     @commands.command()
     async def join(self, ctx):
