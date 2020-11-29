@@ -10,6 +10,9 @@ The problem which inspired image storage and indexing is quick identification an
 
 In this simplified case it would be an image commonly consisting of text + some sort of image meme template.
 
+
+Animated bot emoji handling was intended as a poor man's alternative to using Discord Nitro.
+
 ## Modules
 
 [Official discord.py documentation.](https://discordpy.readthedocs.io/en/latest/index.html "Discordpy docs.")
@@ -45,6 +48,7 @@ Replace the file `token.txt` to contain only your bot token (without the quotati
 The following music playback commands are at the users disposal:
 - `!stream url/search_query` - plays a youtube url/search query result from a stream
 - `!ytd url/search_query` - plays a youtube url/search query result from a downloaded audio file, the audio file is permanently downloaded to the `media/` folder
+- `!volume new_volum_integer` - sets new audio volume, valid range is 0-100
 - `!join` - makes the bot join the users voice channel
 - `!leave` - makes the bot leave the users voice channel
 - `!skip` - skips current song
