@@ -3,8 +3,11 @@ import discord
 import youtube_dl
 import re
 import pandas 
+import aiosqlite
+import pytesseract
 
 from discord.ext import commands
+from PIL import Image
 
 youtube_dl.utils.bug_reports_message = lambda: ''
 
@@ -18,8 +21,7 @@ ytdl_format_options = {
     'logtostderr': False,
     'quiet': True,
     'no_warnings': True,
-    'nooverwrites': False,
-    'default_search': 'auto',
+    'nooverwrites': False, 'default_search': 'auto',
     'source_address': '0.0.0.0' # ipv4, ipv6 can have issues
 }
 
@@ -173,10 +175,83 @@ class BotEmojiHandler(commands.Cog):
         emoji = self.build_emoji(emoji_name)
         await ctx.send(f'{author}: {user.mention} {emoji}')
 
+
 bot = commands.Bot(command_prefix='!')
+
+db_file = 'db/meme.db'
+
+@bot.command()
+async def search_meme(ctx, keyword):
+    find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keyword.lower()}%'"
+
+    conn = await aiosqlite.connect(db_file)
+    curr = await conn.cursor()
+    await curr.execute(find_memes)
+
+    rows = await curr.fetchall()
+    print(rows)
+    for row in rows:
+        img_id = str(row[0])
+        
+        loop = asyncio.get_event_loop()
+        img = await loop.run_in_executor(None, lambda: open(img_id+'.jpg', 'rb'))
+        await ctx.channel.send('', file=discord.File(img))
+
+    await conn.close()
+
+@bot.listen('on_message')
+async def work_image(message):
+    if message.author == bot.user:
+        return
+
+    count_rows = 'SELECT COUNT(*) FROM metadata'
+
+    conn = await aiosqlite.connect(db_file)
+    curr = await conn.cursor()
+    await curr.execute(count_rows)
+
+    row = await curr.fetchone()
+    num = row[0]
+
+    image_types = ['png', 'jpg', 'jpeg', 'webp']
+    i = 0
+    for attachment in message.attachments:
+        if any(attachment.filename.lower().endswith(image) for image in image_types):
+            newid = num+i+1
+            img_name = str(newid)
+            await attachment.save(img_name)
+
+            loop = asyncio.get_event_loop()
+            img = await loop.run_in_executor(None, lambda: Image.open(img_name))
+            rgb_img = await loop.run_in_executor(None, lambda: img.convert('RGB'))
+            await loop.run_in_executor(None, lambda: rgb_img.save(img_name+'.jpg'))
+
+            txt = await loop.run_in_executor(None, lambda: pytesseract.image_to_string(img))
+            txt = txt.lower()
+
+            task = (newid, txt)
+            insert_meta = f'INSERT INTO metadata(id, meme_text) VALUES(?, ?)'
+            await curr.execute(insert_meta, task)
+            await conn.commit()
+
+            i += 1
+
+    await conn.close()
 
 @bot.event
 async def on_ready():
+    create_keywords = ''' CREATE TABLE IF NOT EXISTS metadata (
+                          id integer PRIMARY KEY,
+                          meme_text text NOT NULL
+                          ); 
+                      '''
+
+    conn = await aiosqlite.connect(db_file)
+    curr = await conn.cursor()
+    await curr.execute(create_keywords)
+    row = await curr.fetchone()
+    await conn.close()
+
     print(f'Logged in as {bot.user}')
     print(r'------')
 
@@ -186,5 +261,4 @@ with open('token.txt') as f:
 bot.add_cog(MusicPlayer(bot))
 bot.add_cog(BotEmojiHandler(bot))
 bot.run(token)
-
 
