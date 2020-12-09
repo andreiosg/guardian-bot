@@ -219,7 +219,7 @@ class Memester(commands.Cog):
             if any(attachment.filename.lower().endswith(image) for image in self.image_types):
                 newid = num+i+1
                 img_name = str(newid)
-                await attachment.save(self.src_path++attachment.filename)
+                await attachment.save(self.src_path+attachment.filename)
 
                 loop = asyncio.get_event_loop()
 
