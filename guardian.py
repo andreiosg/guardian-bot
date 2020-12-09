@@ -155,7 +155,7 @@ class BotEmojiHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.animojis = pandas.read_csv('data/animated-emojis.csv')
+        self.animojis = pandas.read_csv('animated_emoji_data/animated_emojis.csv')
 
     def build_emoji(self, emoji_name):
         idx = self.animojis[self.animojis['name']==emoji_name].index.item() 
@@ -175,90 +175,97 @@ class BotEmojiHandler(commands.Cog):
         emoji = self.build_emoji(emoji_name)
         await ctx.send(f'{author}: {user.mention} {emoji}')
 
+class Memester(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.db_file = 'meme_database/meme.db'
+
+        self.image_types = ['png', 'jpg', 'jpeg', 'webp']
+        
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        create_keywords = ''' CREATE TABLE IF NOT EXISTS metadata (
+                              id integer PRIMARY KEY,
+                              meme_text text NOT NULL
+                              ); 
+                          '''
+
+        conn = await aiosqlite.connect(self.db_file)
+        curr = await conn.cursor()
+        await curr.execute(create_keywords)
+        await conn.close()
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.author == self.bot.user:
+            return
+
+        count_rows = 'SELECT COUNT(*) FROM metadata'
+
+        conn = await aiosqlite.connect(self.db_file)
+        curr = await conn.cursor()
+        await curr.execute(count_rows)
+
+        row = await curr.fetchone()
+        num = row[0]
+
+        i = 0
+        for attachment in message.attachments:
+            if any(attachment.filename.lower().endswith(image) for image in self.image_types):
+                newid = num+i+1
+                img_name = str(newid)
+                await attachment.save(img_name)
+
+                loop = asyncio.get_event_loop()
+
+                img = await loop.run_in_executor(None, lambda: Image.open(img_name))
+                rgb_img = await loop.run_in_executor(None, lambda: img.convert('RGB'))
+                await loop.run_in_executor(None, lambda: rgb_img.save(img_name+'.jpg'))
+
+                txt = await loop.run_in_executor(None, lambda: pytesseract.image_to_string(img))
+                txt = txt.lower()
+
+                task = (newid, txt)
+                insert_meta = f'INSERT INTO metadata(id, meme_text) VALUES(?, ?)'
+                await curr.execute(insert_meta, task)
+                await conn.commit()
+
+                i += 1
+
+        await conn.close()
+
+    @commands.command()
+    async def search_meme(self, ctx, keyword):
+        find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keyword.lower()}%'"
+
+        conn = await aiosqlite.connect(self.db_file)
+        curr = await conn.cursor()
+        await curr.execute(find_memes)
+
+        rows = await curr.fetchall()
+        for row in rows:
+            img_id = str(row[0])
+            
+            loop = asyncio.get_event_loop()
+            img = await loop.run_in_executor(None, lambda: open(img_id+'.jpg', 'rb'))
+            await ctx.channel.send('', file=discord.File(img))
+
+        await conn.close()
+
 
 bot = commands.Bot(command_prefix='!')
 
-db_file = 'db/meme.db'
-
-@bot.command()
-async def search_meme(ctx, keyword):
-    find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keyword.lower()}%'"
-
-    conn = await aiosqlite.connect(db_file)
-    curr = await conn.cursor()
-    await curr.execute(find_memes)
-
-    rows = await curr.fetchall()
-    print(rows)
-    for row in rows:
-        img_id = str(row[0])
-        
-        loop = asyncio.get_event_loop()
-        img = await loop.run_in_executor(None, lambda: open(img_id+'.jpg', 'rb'))
-        await ctx.channel.send('', file=discord.File(img))
-
-    await conn.close()
-
-@bot.listen('on_message')
-async def work_image(message):
-    if message.author == bot.user:
-        return
-
-    count_rows = 'SELECT COUNT(*) FROM metadata'
-
-    conn = await aiosqlite.connect(db_file)
-    curr = await conn.cursor()
-    await curr.execute(count_rows)
-
-    row = await curr.fetchone()
-    num = row[0]
-
-    image_types = ['png', 'jpg', 'jpeg', 'webp']
-    i = 0
-    for attachment in message.attachments:
-        if any(attachment.filename.lower().endswith(image) for image in image_types):
-            newid = num+i+1
-            img_name = str(newid)
-            await attachment.save(img_name)
-
-            loop = asyncio.get_event_loop()
-            img = await loop.run_in_executor(None, lambda: Image.open(img_name))
-            rgb_img = await loop.run_in_executor(None, lambda: img.convert('RGB'))
-            await loop.run_in_executor(None, lambda: rgb_img.save(img_name+'.jpg'))
-
-            txt = await loop.run_in_executor(None, lambda: pytesseract.image_to_string(img))
-            txt = txt.lower()
-
-            task = (newid, txt)
-            insert_meta = f'INSERT INTO metadata(id, meme_text) VALUES(?, ?)'
-            await curr.execute(insert_meta, task)
-            await conn.commit()
-
-            i += 1
-
-    await conn.close()
 
 @bot.event
 async def on_ready():
-    create_keywords = ''' CREATE TABLE IF NOT EXISTS metadata (
-                          id integer PRIMARY KEY,
-                          meme_text text NOT NULL
-                          ); 
-                      '''
-
-    conn = await aiosqlite.connect(db_file)
-    curr = await conn.cursor()
-    await curr.execute(create_keywords)
-    row = await curr.fetchone()
-    await conn.close()
-
     print(f'Logged in as {bot.user}')
     print(r'------')
 
 with open('token.txt') as f:
     token = f.read()
 
+bot.add_cog(Memester(bot))
 bot.add_cog(MusicPlayer(bot))
 bot.add_cog(BotEmojiHandler(bot))
 bot.run(token)
-
