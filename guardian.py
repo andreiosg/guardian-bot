@@ -13,7 +13,7 @@ youtube_dl.utils.bug_reports_message = lambda: ''
 
 ytdl_format_options = {
     'format': 'bestaudio/best',
-    'outtmpl': 'media/%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'outtmpl': 'media/audio/%(extractor)s-%(id)s-%(title)s.%(ext)s',
     'restrictfilenames': True,
     'noplaylist': True,
     'nocheckcertificate': True,
@@ -181,6 +181,10 @@ class Memester(commands.Cog):
         self.db_file = 'meme_database/meme.db'
 
         self.image_types = ['png', 'jpg', 'jpeg', 'webp']
+
+        self.src_path = 'media/src_img/'
+        self.db_path = 'media/db_img/'
+        self.ext = '.jpg'
         
 
     @commands.Cog.listener()
@@ -215,13 +219,13 @@ class Memester(commands.Cog):
             if any(attachment.filename.lower().endswith(image) for image in self.image_types):
                 newid = num+i+1
                 img_name = str(newid)
-                await attachment.save(img_name)
+                await attachment.save(self.src_path++attachment.filename)
 
                 loop = asyncio.get_event_loop()
 
-                img = await loop.run_in_executor(None, lambda: Image.open(img_name))
+                img = await loop.run_in_executor(None, lambda: Image.open(self.src_path+attachment.filename))
                 rgb_img = await loop.run_in_executor(None, lambda: img.convert('RGB'))
-                await loop.run_in_executor(None, lambda: rgb_img.save(img_name+'.jpg'))
+                await loop.run_in_executor(None, lambda: rgb_img.save(self.db_path+img_name+self.ext))
 
                 txt = await loop.run_in_executor(None, lambda: pytesseract.image_to_string(img))
                 txt = txt.lower()
@@ -248,7 +252,7 @@ class Memester(commands.Cog):
             img_id = str(row[0])
             
             loop = asyncio.get_event_loop()
-            img = await loop.run_in_executor(None, lambda: open(img_id+'.jpg', 'rb'))
+            img = await loop.run_in_executor(None, lambda: open(self.db_path+img_id+self.ext, 'rb'))
             await ctx.channel.send('', file=discord.File(img))
 
         await conn.close()
