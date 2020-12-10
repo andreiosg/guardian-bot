@@ -20,7 +20,7 @@ Animated bot emoji handling was intended as a poor man's alternative to using Di
 
 Install the modules:
 
-`$ python3 -m pip install -U discord.py[voice] youtube_dl pandas aiosqlite pytesseract`
+`$ python3 -m pip install -U discord.py[voice] youtube_dl pandas aiosqlite pytesseract Pillow`
 
 
 Install the following dependencies for discord.py[voice] (Debian based systems):
