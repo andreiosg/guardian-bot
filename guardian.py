@@ -60,9 +60,6 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options[stream]), data=data)
     
 class EmbedBuilder():
-    def __init__():
-        pass
-
     def embed_queue(bot, head, titles):
         em = discord.Embed(title=head, color=0x149cdf)
         em.set_thumbnail(url=bot.user.avatar_url)
