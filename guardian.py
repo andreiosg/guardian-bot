@@ -207,6 +207,12 @@ class BotEmojiHandler(commands.Cog):
         emoji = self.build_emoji(emoji_name)
         await ctx.send(f'{author}: {user.mention} {emoji}')
 
+    @commands.command()
+    async def pepi(self, ctx):
+        loop = asyncio.get_event_loop()
+        img = await loop.run_in_executor(None, lambda: open('pepi.webp', 'rb'))
+        await ctx.channel.send('Sretan rođendan i sve najbolje žele ti tvoji Jehovini svjedoci! <3', file=discord.File(img))
+
 class Memester(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -252,7 +258,7 @@ class Memester(commands.Cog):
                 img_name = str(newid)
                 await attachment.save(self.src_path+attachment.filename)
 
-                loop = asyncio.get_event_loop()
+                loop = self.bot.loop or asyncio.get_event_loop()
 
                 img = await loop.run_in_executor(None, lambda: Image.open(self.src_path+attachment.filename))
                 rgb_img = await loop.run_in_executor(None, lambda: img.convert('RGB'))
@@ -282,7 +288,8 @@ class Memester(commands.Cog):
         for row in rows:
             img_id = str(row[0])
             
-            loop = asyncio.get_event_loop()
+            loop = self.bot.loop or asyncio.get_event_loop()
+
             img = await loop.run_in_executor(None, lambda: open(self.db_path+img_id+self.ext, 'rb'))
             await ctx.channel.send('', file=discord.File(img))
 
