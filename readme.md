@@ -52,7 +52,8 @@ The file `token.txt` should consist of a single line; the bot token.
 The following music playback commands are at the users disposal:
 - `!stream url/search_query` - plays a youtube url/search query result from a stream
 - `!ytd url/search_query` - plays a youtube url/search query result from a downloaded audio file, the audio file is permanently downloaded to the `media/` folder
-- `!volume new_volum_integer` - sets new audio volume, valid range is 0-100
+- `!queue` - lists all the songs currently in the queue (playing+queued)
+- `!volume new_volume_integer` - sets new audio volume, divides by 100
 - `!join` - makes the bot join the users voice channel
 - `!leave` - makes the bot leave the users voice channel
 - `!skip` - skips current song
