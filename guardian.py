@@ -59,16 +59,19 @@ class YTDLSource(discord.PCMVolumeTransformer):
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options[stream]), data=data)
     
+# acts as a namespace for the embed methods needed for the MusicPlayer
 class EmbedBuilder():
-    def embed_queue(bot, head, titles):
+    @staticmethod
+    def embed_queue(bot, head, values):
         em = discord.Embed(title=head, color=0x149cdf)
         em.set_thumbnail(url=bot.user.avatar_url)
 
-        for i, title in enumerate(titles):
-            em.add_field(name=str(i+1)+'.', value=title, inline=False)
+        for i, value in enumerate(values):
+            em.add_field(name=str(i+1)+'.', value=value, inline=False)
 
         return em
         
+    @staticmethod
     def embed_one(bot, head, name, value):
         em = discord.Embed(title=head, color=0x149cdf)
         em.set_thumbnail(url=bot.user.avatar_url)
