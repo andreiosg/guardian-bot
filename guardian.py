@@ -58,6 +58,27 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options[stream]), data=data)
+    
+class EmbedBuilder():
+    def __init__():
+        pass
+
+    def embed_queue(bot, head, titles):
+        em = discord.Embed(title=head, color=0x149cdf)
+        em.set_thumbnail(url=bot.user.avatar_url)
+
+        for i, title in enumerate(titles):
+            em.add_field(name=str(i+1)+'.', value=title, inline=False)
+
+        return em
+        
+    def embed_one(bot, head, name, value):
+        em = discord.Embed(title=head, color=0x149cdf)
+        em.set_thumbnail(url=bot.user.avatar_url)
+
+        em.add_field(name=name, value=value, inline=False)
+
+        return em
 
 
 class MusicPlayer(commands.Cog):
@@ -67,6 +88,8 @@ class MusicPlayer(commands.Cog):
         self.songs = asyncio.Queue()
         self.play_next = asyncio.Event()
 
+        self.titles = []
+
         self.bot.loop.create_task(self.queue_task())
 
     async def queue_task(self):
@@ -74,15 +97,18 @@ class MusicPlayer(commands.Cog):
             self.play_next.clear()
 
             ctx, player = await self.songs.get()
+            self.title = player.title
             ctx.voice_client.play(player, after = lambda _: self.toggle_next())
-            await ctx.send(f'Playing: {player.title}')
+            await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Playing:', 'Song name:', player.title))
             
             await self.play_next.wait()
             
     def toggle_next(self):
+        if len(self.titles) > 0:
+            self.titles.pop(0)
         self.bot.loop.call_soon_threadsafe(self.play_next.set)
 
-    @commands.command()
+    @commands.command(pass_context=True, aliases=['play'])
     async def stream(self, ctx, *, url):
         vc = ctx.voice_client
 
@@ -90,8 +116,9 @@ class MusicPlayer(commands.Cog):
             return
 
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
+        self.titles.append(player.title)
         if vc.is_playing():
-            await ctx.send(f'Queued: {player.title}')
+            await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Queued:', 'Song name:', player.title))
         await self.songs.put((ctx, player))
 
     @commands.command()
@@ -102,23 +129,24 @@ class MusicPlayer(commands.Cog):
             return
 
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=False)
+        self.titles.apppend(player.title)
         if vc.is_playing():
-            await ctx.send(f'Queued: {player.title}')
+            await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Queued:', 'Song name:', player.title))
         await self.songs.put((ctx, player))
         
     @commands.command()
     async def volume(self, ctx, volume: int):
         vc = ctx.voice_client
         if vc is None:
-            return await ctx.send('Not in a voice channel.')
+            return await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'User not in voice channel.', ctx.author.name, 'AA '))
 
         vc.source.volume = volume / 100
-        await ctx.send(f'Set volume to {volume}')
+        await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Volume:', 'New value:', volume))
 
     @commands.command()
     async def join(self, ctx):
         if ctx.author.voice is None: 
-            return await ctx.send('User not in a voice channel.')
+            return await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'User not in voice channel.', 'Please join a channel:', ctx.author.name))
 
         vc = ctx.voice_client
         if vc is not None:
@@ -136,6 +164,7 @@ class MusicPlayer(commands.Cog):
     async def skip(self, ctx):
         vc = ctx.voice_client
         if vc is not None and vc.is_playing():
+            await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Skipping:', 'Song name:', self.title))
             vc.stop()
 
     @commands.command()
@@ -150,6 +179,9 @@ class MusicPlayer(commands.Cog):
         if vc is not None and vc.is_paused():
             vc.resume()
 
+    @commands.command(pass_context=True, aliases=['q'])
+    async def queue(self, ctx):
+        await ctx.send(embed=EmbedBuilder.embed_queue(self.bot, 'Queue:', self.titles))
 
 class BotEmojiHandler(commands.Cog):
     def __init__(self, bot):
@@ -190,8 +222,7 @@ class Memester(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         create_keywords = ''' CREATE TABLE IF NOT EXISTS metadata (
-                              id integer PRIMARY KEY,
-                              meme_text text NOT NULL
+                              id integer PRIMARY KEY, meme_text text NOT NULL
                               ); 
                           '''
 
@@ -240,8 +271,8 @@ class Memester(commands.Cog):
         await conn.close()
 
     @commands.command()
-    async def search_meme(self, ctx, keyword):
-        find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keyword.lower()}%'"
+    async def search_meme(self, ctx, *, keywords):
+        find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keywords.lower()}%'"
 
         conn = await aiosqlite.connect(self.db_file)
         curr = await conn.cursor()
