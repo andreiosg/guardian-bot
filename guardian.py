@@ -85,28 +85,39 @@ class MusicPlayer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.songs = asyncio.Queue()
+        #self.songs = asyncio.Queue()
+        self.songs = {}
         self.play_next = asyncio.Event()
-
-        self.titles = []
-
         self.bot.loop.create_task(self.queue_task())
 
+        self.titles = {}
+
+        self.gid = None
+
     async def queue_task(self):
+        # method used to play songs on multiple servers
         while True:
             self.play_next.clear()
+            await self.play_next.wait()
 
-            ctx, player = await self.songs.get()
+            # queue empty, no songs playing
+            if self.songs[self.gid].empty and len(self.titles[self.gid]) == 0:
+                continue
+
+            ctx, player = await self.songs[self.gid].get()
             self.title = player.title
+
             ctx.voice_client.play(player, after = lambda _: self.toggle_next())
             await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Playing:', 'Song name:', player.title))
             
-            await self.play_next.wait()
             
     def toggle_next(self):
-        if len(self.titles) > 0:
-            self.titles.pop(0)
+        if len(self.titles[self.gid]) > 0:
+            self.titles[self.gid].pop(0)
         self.bot.loop.call_soon_threadsafe(self.play_next.set)
+
+    async def cog_before_invoke(self, ctx):
+        self.gid = ctx.message.guild.id
 
     @commands.command(pass_context=True, aliases=['play'])
     async def stream(self, ctx, *, url):
@@ -116,10 +127,16 @@ class MusicPlayer(commands.Cog):
             return
 
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=True)
-        self.titles.append(player.title)
+
         if vc.is_playing():
+            self.titles[self.gid].append(player.title)
             await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Queued:', 'Song name:', player.title))
-        await self.songs.put((ctx, player))
+        else:
+            self.titles[self.gid] = [player.title]
+            self.songs[self.gid] = asyncio.Queue()
+            self.bot.loop.call_soon_threadsafe(self.play_next.set)
+
+        await self.songs[self.gid].put((ctx, player))
 
     @commands.command()
     async def ytd(self, ctx, *, url):
@@ -129,10 +146,18 @@ class MusicPlayer(commands.Cog):
             return
 
         player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=False)
-        self.titles.apppend(player.title)
+
         if vc.is_playing():
+            self.titles[self.gid].append(player.title)
             await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Queued:', 'Song name:', player.title))
-        await self.songs.put((ctx, player))
+        else:
+            self.titles[self.gid] = [player.title]
+            self.bot.loop.call_soon_threadsafe(self.play_next.set)
+            self.songs[self.gid] = asyncio.Queue()
+
+
+        await self.songs[self.gid].put((ctx, player))
+
         
     @commands.command()
     async def volume(self, ctx, volume: int):
@@ -181,12 +206,13 @@ class MusicPlayer(commands.Cog):
 
     @commands.command(pass_context=True, aliases=['q'])
     async def queue(self, ctx):
-        await ctx.send(embed=EmbedBuilder.embed_queue(self.bot, 'Queue:', self.titles))
+        await ctx.send(embed=EmbedBuilder.embed_queue(self.bot, 'Queue:', self.titles[self.gid]))
 
 class BotEmojiHandler(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+        # every animated emoji contained in a single .csv file (all servers)
         self.animojis = pandas.read_csv('animated_emoji_data/animated_emojis.csv')
 
     def build_emoji(self, emoji_name):
@@ -207,12 +233,6 @@ class BotEmojiHandler(commands.Cog):
         emoji = self.build_emoji(emoji_name)
         await ctx.send(f'{author}: {user.mention} {emoji}')
 
-    @commands.command()
-    async def pepi(self, ctx):
-        loop = asyncio.get_event_loop()
-        img = await loop.run_in_executor(None, lambda: open('pepi.webp', 'rb'))
-        await ctx.channel.send('Sretan rođendan i sve najbolje žele ti tvoji Jehovini svjedoci! <3', file=discord.File(img))
-
 class Memester(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -224,11 +244,15 @@ class Memester(commands.Cog):
         self.db_path = 'media/db_img/'
         self.ext = '.jpg'
         
+    async def cog_before_invoke(self, ctx):
+        self.gid = ctx.message.guild.id
 
     @commands.Cog.listener()
     async def on_ready(self):
         create_keywords = ''' CREATE TABLE IF NOT EXISTS metadata (
-                              id integer PRIMARY KEY, meme_text text NOT NULL
+                              id integer PRIMARY KEY, 
+                              gid integer,
+                              meme_text text
                               ); 
                           '''
 
@@ -241,6 +265,8 @@ class Memester(commands.Cog):
     async def on_message(self, message):
         if message.author == self.bot.user:
             return
+
+        self.gid = message.guild.id
 
         count_rows = 'SELECT COUNT(*) FROM metadata'
 
@@ -267,8 +293,8 @@ class Memester(commands.Cog):
                 txt = await loop.run_in_executor(None, lambda: pytesseract.image_to_string(img))
                 txt = txt.lower()
 
-                task = (newid, txt)
-                insert_meta = f'INSERT INTO metadata(id, meme_text) VALUES(?, ?)'
+                task = (newid, self.gid, txt)
+                insert_meta = f'INSERT INTO metadata(id, gid, meme_text) VALUES(?, ?, ?)'
                 await curr.execute(insert_meta, task)
                 await conn.commit()
 
@@ -278,7 +304,7 @@ class Memester(commands.Cog):
 
     @commands.command()
     async def search_meme(self, ctx, *, keywords):
-        find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keywords.lower()}%'"
+        find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keywords.lower()}%' AND gid={self.gid}"
 
         conn = await aiosqlite.connect(self.db_file)
         curr = await conn.cursor()
