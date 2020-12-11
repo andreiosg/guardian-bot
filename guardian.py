@@ -85,7 +85,6 @@ class MusicPlayer(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        #self.songs = asyncio.Queue()
         self.songs = {}
         self.play_next = asyncio.Event()
         self.bot.loop.create_task(self.queue_task())
@@ -279,7 +278,7 @@ class Memester(commands.Cog):
 
         i = 0
         for attachment in message.attachments:
-            if any(attachment.filename.lower().endswith(image) for image in self.image_types):
+            if any(attachment.filename.lower().endswith(ext) for ext in self.image_types):
                 newid = num+i+1
                 img_name = str(newid)
                 await attachment.save(self.src_path+attachment.filename)
@@ -294,7 +293,7 @@ class Memester(commands.Cog):
                 txt = txt.lower()
 
                 task = (newid, self.gid, txt)
-                insert_meta = f'INSERT INTO metadata(id, gid, meme_text) VALUES(?, ?, ?)'
+                insert_meta = 'INSERT INTO metadata(id, gid, meme_text) VALUES(?, ?, ?)'
                 await curr.execute(insert_meta, task)
                 await conn.commit()
 
@@ -304,11 +303,11 @@ class Memester(commands.Cog):
 
     @commands.command()
     async def search_meme(self, ctx, *, keywords):
-        find_memes = f"SELECT id FROM metadata WHERE meme_text LIKE '%{keywords.lower()}%' AND gid={self.gid}"
+        find_memes = 'SELECT id FROM metadata WHERE meme_text LIKE ? AND gid=?'
 
         conn = await aiosqlite.connect(self.db_file)
         curr = await conn.cursor()
-        await curr.execute(find_memes)
+        await curr.execute(find_memes, ('%'+keywords+'%', self.gid))
 
         rows = await curr.fetchall()
         for row in rows:
