@@ -77,3 +77,11 @@ The following image storage and text OCR command is at the users disposal:
 All the images sent by the users are saved locally by the bot. Each image has its text OCRd. 
 
 The image id (which corresponds to the filename, converted to .jpg), as well as its text are then inserted as a single row into a database table for future fetching.
+
+## Demo
+
+### Music player
+
+### Meme storage and text OCR
+
+### Bot emoji handling
