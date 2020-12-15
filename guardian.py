@@ -93,6 +93,9 @@ class MusicPlayer(commands.Cog):
 
         self.gid = None
 
+    async def cog_before_invoke(self, ctx):
+        self.gid = ctx.message.guild.id
+
     async def queue_task(self):
         # method used to play songs on multiple servers
         while True:
@@ -109,14 +112,11 @@ class MusicPlayer(commands.Cog):
             ctx.voice_client.play(player, after = lambda _: self.toggle_next())
             await ctx.send(embed=EmbedBuilder.embed_one(self.bot, 'Playing:', 'Song name:', player.title))
             
-            
     def toggle_next(self):
         if len(self.titles[self.gid]) > 0:
             self.titles[self.gid].pop(0)
         self.bot.loop.call_soon_threadsafe(self.play_next.set)
 
-    async def cog_before_invoke(self, ctx):
-        self.gid = ctx.message.guild.id
 
     @commands.command(pass_context=True, aliases=['play'])
     async def stream(self, ctx, *, url):
