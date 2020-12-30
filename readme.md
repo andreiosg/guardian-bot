@@ -81,7 +81,10 @@ The image id (which corresponds to the filename, converted to .jpg), as well as 
 ## Demo
 
 ### Music player
+![Music player demo.](./demo/music.gif)
 
 ### Meme storage and text OCR
+![Meme storage and text OCR demo.](./demo/meme.gif)
 
 ### Bot emoji handling
+![Bot emoji handling demo.](./demo/emoji.gif)
