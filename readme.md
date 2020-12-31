@@ -81,7 +81,7 @@ The image id (which corresponds to the filename, converted to .jpg), as well as 
 ## Demo
 
 ### Music player
-![Music player demo.](./demo/music.gif)
+[![Music player demo.](./demo/music.gif)](https://www.youtube.com/watch?v=e3dnAVKtolc)
 
 ### Meme storage and text OCR
 ![Meme storage and text OCR demo.](./demo/meme.gif)
