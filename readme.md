@@ -79,8 +79,10 @@ All the images sent by the users are saved locally by the bot. Each image has it
 The image id (which corresponds to the filename, converted to .jpg), as well as its text are then inserted as a single row into a database table for future fetching.
 
 ## Demo
+A showcase of some of the bots functionalities.
 
 ### Music player
+Click on the gif for a youtube video with sound.
 [![Music player demo.](./demo/music.gif)](https://www.youtube.com/watch?v=e3dnAVKtolc)
 
 ### Meme storage and text OCR
